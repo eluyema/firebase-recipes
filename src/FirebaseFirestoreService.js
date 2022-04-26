@@ -6,7 +6,10 @@ const createDocument = (collection, document) => {
   return firestore.collection(collection).add(document);
 };
 
-const readDocuments = ({ collection, queries }) => {
+const readDocuments = async ({
+  collection,
+  queries
+}) => {
   let collectionRef = firestore.collection(collection);
 
   if (queries && queries.length > 0) {
@@ -26,10 +29,15 @@ const updateDocument = (collection, id, document) => {
   return firestore.collection(collection).doc(id).update(document);
 };
 
+const deleteDocument = (collection, id) => {
+  return firestore.collection(collection).doc(id).delete();
+};
+
 const FirebaseFirestoreService = {
   createDocument,
   readDocuments,
   updateDocument,
+  deleteDocument,
 };
 
 export default FirebaseFirestoreService;

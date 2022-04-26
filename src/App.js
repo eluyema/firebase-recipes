@@ -1,17 +1,18 @@
-import { useEffect, useState } from "react";
-import "./App.css";
-import AddEditRecipeForm from "./components/AddEditRecipeForm";
-import LoginForm from "./components/LoginForm";
+import { useEffect, useState } from 'react';
+import FirebaseAuthService from './FirebaseAuthService';
+import LoginForm from './components/LoginForm';
+import AddEditRecipeForm from './components/AddEditRecipeForm';
 
-import FirebaseAuthService from "./FirebaseAuthService";
-import FirebaseFirestoreService from "./FirebaseFirestoreService";
+import './App.css';
+import FirebaseFirestoreService from './FirebaseFirestoreService';
 
-function App() {
+function App() {  
   const [user, setUser] = useState(null);
   const [currentRecipe, setCurrentRecipe] = useState(null);
   const [recipes, setRecipes] = useState([]);
 
   useEffect(() => {
+
     fetchRecipes()
       .then((fetchedRecipes) => {
         setRecipes(fetchedRecipes);
@@ -19,16 +20,20 @@ function App() {
       .catch((error) => {
         console.error(error.message);
         throw error;
-      });
+      })
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  FirebaseAuthService.subscribeToAuthChanges(setUser);
 
   async function fetchRecipes() {
     const queries = [];
 
     if (!user) {
       queries.push({
-        field: "isPublished",
-        condition: "==",
+        field: 'isPublished',
+        condition: '==',
         value: true,
       });
     }
@@ -37,29 +42,32 @@ function App() {
 
     try {
       const response = await FirebaseFirestoreService.readDocuments({
-        collection: "recipes",
-        queries,
+        collection: 'recipes',
+        queries: queries
       });
 
       const newRecipes = response.docs.map((recipeDoc) => {
         const id = recipeDoc.id;
         const data = recipeDoc.data();
         data.publishDate = new Date(data.publishDate.seconds * 1000);
+
         return { ...data, id };
       });
-      console.log(newRecipes);
 
       fetchedRecipes = [...newRecipes];
+      
     } catch (error) {
       console.error(error.message);
       throw error;
     }
+
     return fetchedRecipes;
   }
 
   async function handleFetchRecipes() {
     try {
       const fetchedRecipes = await fetchRecipes();
+
       setRecipes(fetchedRecipes);
     } catch (error) {
       console.error(error.message);
@@ -67,14 +75,13 @@ function App() {
     }
   }
 
-  FirebaseAuthService.subscribeToAuthChanges(setUser);
-
   async function handleAddRecipe(newRecipe) {
     try {
       const response = await FirebaseFirestoreService.createDocument(
-        "recipes",
+        'recipes',
         newRecipe
       );
+
       handleFetchRecipes();
 
       alert(`succesfully created a recipe with an ID = ${response.id}`);
@@ -90,7 +97,7 @@ function App() {
         recipeId,
         newRecipe
       );
-
+      console.log('??')
       handleFetchRecipes();
 
       alert(`successfully updated a recipe with an ID = ${recipeId}`);
@@ -98,6 +105,29 @@ function App() {
     } catch (error) {
       alert(error.message);
       throw error;
+    }
+  }
+
+  async function handleDeleteRecipe(recipeId) {
+    const deleteConfirmtion = window.confirm(
+      'Are you sure you want to delete this recipe? OK for Yes. Cancel for No.'
+    );
+
+    if (deleteConfirmtion) {
+      try {
+        await FirebaseFirestoreService.deleteDocument('recipes', recipeId);
+
+        handleFetchRecipes();
+
+        setCurrentRecipe(null);
+
+        window.scrollTo(0, 0);
+
+        alert(`successfully deleted a recipe with an ID = ${recipeId}`);
+      } catch (error) {
+        alert(error.message);
+        throw error;
+      }
     }
   }
 
@@ -118,11 +148,11 @@ function App() {
 
   function lookupCategoryLabel(categoryKey) {
     const categories = {
-      breadsSandwichesAndPizza: "Breads, Sandwiches, and Pizza",
-      eggsAndBreakfast: "Eggs & Breakfast",
-      dessertsAndBakedGoods: "Desserts & Baked Goods",
-      fishAndSeafood: "Fish & Seafood",
-      vegetables: "Vegetables",
+      breadsSandwichesAndPizza: 'Breads, Sandwiches, and Pizza',
+      eggsAndBreakfast: 'Eggs & Breakfast',
+      dessertsAndBakedGoods: 'Desserts & Baked Goods',
+      fishAndSeafood: 'Fish & Seafood',
+      vegetables: 'Vegetables',
     };
 
     const label = categories[categoryKey];
@@ -142,53 +172,54 @@ function App() {
   return (
     <div className="App">
       <div className="title-row">
-        <h1 className="title">Firebase recipes</h1>
-        <LoginForm existingUser={user} />
+        <h1 className="title">Firebase Recipes</h1>
+        <LoginForm existingUser={user}></LoginForm>
       </div>
       <div className="main">
-        <div className="recipe-list-box">
-          {recipes && recipes.length > 0 ? (
-            <div className="recipe-list">
-              {recipes.map((recipe) => {
-                return (
-                  <div className="recipe-card" key={recipe.id}>
-                    {recipe.isPublished === false ? (
-                      <div className="unpublished">UNPUBLISHED</div>
-                    ) : null}
-                    <div className="recipe-field">{recipe.isPublished}</div>
-                    <div className="recipe-name">{recipe.name}</div>
-                    <div className="recipe-field">
-                      Category: {lookupCategoryLabel(recipe.category)}
+        <div className="center">
+          <div className="recipe-list-box">
+            {recipes && recipes.length === 0 ? (
+              <h5 className="no-recipes">No Recipes Found</h5>
+            ) : null}
+            {recipes && recipes.length > 0 ? (
+              <div className="recipe-list">
+                {recipes.map((recipe) => {
+                  return (
+                    <div className="recipe-card" key={recipe.id}>
+                      {recipe.isPublished === false ? (
+                        <div className="unpublished">UNPUBLISHED</div>
+                      ) : null}
+                      <div className="recipe-name">{recipe.name}</div>
+                      <div className="recipe-field">
+                        Category: {lookupCategoryLabel(recipe.category)}
+                      </div>
+                      <div className="recipe-field">
+                        Publish Date: {formatDate(recipe.publishDate)}
+                      </div>
+                      {user ? (
+                        <button
+                          type="button"
+                          onClick={() => handleEditRecipeClick(recipe.id)}
+                          className="primary-button edit-button"
+                        >
+                          EDIT
+                        </button>
+                      ) : null}
                     </div>
-                    <div className="recipe-field">
-                      Publish Date: {formatDate(recipe.publishDate)}
-                    </div>
-                    {user ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleEditRecipeClick(recipe.id);
-                          console.log('???!')
-                        }}
-                        className="primary-button edit-button"
-                      >
-                        EDIT
-                      </button>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-          ) : null}
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
         </div>
-
         {user ? (
           <AddEditRecipeForm
-            // existingRecipe={currentRecipe}
-            // handleUpdateRecipe={handleUpdateRecipe}
-            // handleEditRecipeCancel={handleEditRecipeCancel}
+            existingRecipe={currentRecipe}
             handleAddRecipe={handleAddRecipe}
-          />
+            handleUpdateRecipe={handleUpdateRecipe}
+            handleDeleteRecipe={handleDeleteRecipe}
+            handleEditRecipeCancel={handleEditRecipeCancel}
+          ></AddEditRecipeForm>
         ) : null}
       </div>
     </div>

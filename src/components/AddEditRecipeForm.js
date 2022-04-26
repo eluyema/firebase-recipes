@@ -1,17 +1,36 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-function AddEditRecipeForm({ handleAddRecipe }) {
+function AddEditRecipeForm({
+  existingRecipe,
+  handleAddRecipe,
+  handleUpdateRecipe,
+  handleDeleteRecipe,
+  handleEditRecipeCancel,
+}) {
+  useEffect(() => {
+    if (existingRecipe) {
+      setName(existingRecipe.name);
+      setCategory(existingRecipe.category);
+      setDirections(existingRecipe.directions);
+      setPublishDate(existingRecipe.publishDate.toISOString().split("T")[0]);
+      setIngredients(existingRecipe.ingredients);
+    } else {
+      resetForm();
+    }
+  }, [existingRecipe]);
+
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [publishDate, setPublishDate] = useState(
     new Date().toISOString().split("T")[0]
   );
-  const [directions, setdirections] = useState("");
+  const [directions, setDirections] = useState("");
   const [ingredients, setIngredients] = useState([]);
   const [ingredientName, setIngredientName] = useState("");
 
-  const handleRecipeFormSubmit = (e) => {
+  function handleRecipeFormSubmit(e) {
     e.preventDefault();
+
     if (ingredients.length === 0) {
       alert("Ingredients cannot be empty. Please add at least 1 ingredient");
       return;
@@ -28,29 +47,53 @@ function AddEditRecipeForm({ handleAddRecipe }) {
       ingredients,
     };
 
-    handleAddRecipe(newRecipe);
-  };
+    if (existingRecipe) {
+      handleUpdateRecipe(newRecipe, existingRecipe.id);
+    } else {
+      handleAddRecipe(newRecipe);
+    }
 
-  const handleAddIngredient = (e) => {
+    resetForm();
+  }
+
+  function handleAddIngredient(e) {
     if (e.key && e.key !== "Enter") {
       return;
     }
+
     e.preventDefault();
+
     if (!ingredientName) {
-      alert("Missing ingredient. Please double check!");
+      alert("Missing ingredient field. Please double check.");
       return;
     }
 
     setIngredients([...ingredients, ingredientName]);
     setIngredientName("");
-  };
+  }
+
+  function handleDeleteIngredient(ingredientName) {
+    const remainingIngredients = ingredients.filter((ingredient) => {
+      return ingredient !== ingredientName;
+    });
+
+    setIngredients(remainingIngredients);
+  }
+
+  function resetForm() {
+    setName("");
+    setCategory("");
+    setDirections("");
+    setPublishDate("");
+    setIngredients([]);
+  }
 
   return (
     <form
       onSubmit={handleRecipeFormSubmit}
       className="add-edit-recipe-form-container"
     >
-      <h2>Add a New Recipe</h2>
+      {existingRecipe ? <h2>Update the Recipe</h2> : <h2>Add a New Recipe</h2>}
       <div className="top-form-section">
         <div className="fields">
           <label className="recipe-label input-label">
@@ -59,21 +102,17 @@ function AddEditRecipeForm({ handleAddRecipe }) {
               type="text"
               required
               value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-              }}
+              onChange={(e) => setName(e.target.value)}
               className="input-text"
             />
           </label>
           <label className="recipe-label input-label">
             Category:
             <select
-              required
               value={category}
-              onChange={(e) => {
-                setCategory(e.target.value);
-              }}
+              onChange={(e) => setCategory(e.target.value)}
               className="select"
+              required
             >
               <option value=""></option>
               <option value="breadsSandwichesAndPizza">
@@ -90,14 +129,11 @@ function AddEditRecipeForm({ handleAddRecipe }) {
           <label className="recipe-label input-label">
             Directions:
             <textarea
-              type="text"
               required
               value={directions}
-              onChange={(e) => {
-                setdirections(e.target.value);
-              }}
+              onChange={(e) => setDirections(e.target.value)}
               className="input-text directions"
-            />
+            ></textarea>
           </label>
           <label className="recipe-label input-label">
             Publish Date:
@@ -105,9 +141,7 @@ function AddEditRecipeForm({ handleAddRecipe }) {
               type="date"
               required
               value={publishDate}
-              onChange={(e) => {
-                setPublishDate(e.target.value);
-              }}
+              onChange={(e) => setPublishDate(e.target.value)}
               className="input-text"
             />
           </label>
@@ -124,14 +158,15 @@ function AddEditRecipeForm({ handleAddRecipe }) {
           </thead>
           <tbody>
             {ingredients && ingredients.length > 0
-              ? ingredients.map((ingredient, i) => {
+              ? ingredients.map((ingredient) => {
                   return (
-                    <tr key={ingredient + i}>
+                    <tr key={ingredient}>
                       <td className="table-data text-center">{ingredient}</td>
-                      <td className="table-data text-center">
+                      <td className="ingredient-delete-box">
                         <button
                           type="button"
                           className="secondary-button ingredient-delete-button"
+                          onClick={() => handleDeleteIngredient(ingredient)}
                         >
                           Delete
                         </button>
@@ -144,7 +179,7 @@ function AddEditRecipeForm({ handleAddRecipe }) {
         </table>
         {ingredients && ingredients.length === 0 ? (
           <h3 className="text-center no-ingredients">
-            No ingredients added yet
+            No Ingredients Added Yet
           </h3>
         ) : null}
         <div className="ingredient-form">
@@ -153,10 +188,8 @@ function AddEditRecipeForm({ handleAddRecipe }) {
             <input
               type="text"
               value={ingredientName}
-              onChange={(e) => {
-                setIngredientName(e.target.value);
-              }}
-              onKeyDown={handleAddIngredient}
+              onChange={(e) => setIngredientName(e.target.value)}
+              onKeyPress={handleAddIngredient}
               className="input-text"
               placeholder="ex. 1 cup of sugar"
             />
@@ -172,8 +205,26 @@ function AddEditRecipeForm({ handleAddRecipe }) {
       </div>
       <div className="action-buttons">
         <button type="submit" className="primary-button action-button">
-          Create Recipe
+          {existingRecipe ? "Update Recipe" : "Create Recipe"}
         </button>
+        {existingRecipe ? (
+          <>
+            <button
+              type="button"
+              onClick={handleEditRecipeCancel}
+              className="primary-button action-button"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => handleDeleteRecipe(existingRecipe.id)}
+              className="primary-button action-button"
+            >
+              Delete
+            </button>
+          </>
+        ) : null}
       </div>
     </form>
   );
