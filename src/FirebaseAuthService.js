@@ -1,35 +1,35 @@
-import firebase from './FirebaseConfig';
+import firebase from "./FirebaseConfig";
 
 const auth = firebase.auth();
 
-const registerUser = (email, password) =>{
+const registerUser = (email, password) => {
   return auth.createUserWithEmailAndPassword(email, password);
-}
+};
 
-const loginUser = (email, password) =>{
+const loginUser = (email, password) => {
   return auth.signInWithEmailAndPassword(email, password);
-}
+};
 
-const logoutUser = ()=>{
+const logoutUser = () => {
   return auth.signOut();
-}
+};
 
-const sendPasswordResetEmail = (email)=>{
+const sendPasswordResetEmail = (email) => {
   return auth.sendPasswordResetEmail(email);
-}
+};
 
-const subscribeToAuthChanges = (handleAuthChange) =>{
-  auth.onAuthStateChanged((user)=>{
+const subscribeToAuthChanges = (handleAuthChange) => {
+  auth.onAuthStateChanged((user) => {
     handleAuthChange(user);
-  })
-}
+  });
+};
 
 const FirebaseAuthService = {
   registerUser,
   loginUser,
   logoutUser,
   sendPasswordResetEmail,
-  subscribeToAuthChanges
-}
+  subscribeToAuthChanges,
+};
 
 export default FirebaseAuthService;
