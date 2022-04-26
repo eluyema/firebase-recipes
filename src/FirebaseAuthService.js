@@ -18,12 +18,6 @@ const sendPasswordResetEmail = (email)=>{
   return auth.sendPasswordResetEmail(email);
 }
 
-const loginWithGoogle = ()=>{
-  const provider = new firebase.auth.GoogleAuthProvider;
-
-  return auth.signInWithPopup(provider);
-}
-
 const subscribeToAuthChanges = (handleAuthChange) =>{
   auth.onAuthStateChanged((user)=>{
     handleAuthChange(user);
@@ -35,7 +29,6 @@ const FirebaseAuthService = {
   loginUser,
   logoutUser,
   sendPasswordResetEmail,
-  loginWithGoogle,
   subscribeToAuthChanges
 }
 
