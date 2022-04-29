@@ -12,6 +12,7 @@ function LoginForm({ existingUser }) {
       setUsername("");
       setPassword("");
     } catch (e) {
+      
       alert(e.message);
     }
   }
