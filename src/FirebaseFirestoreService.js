@@ -40,7 +40,8 @@ const readDocuments = async ({
 
   if (cursorId) {
     const document = await readDocument(collection, cursorId);
-    collectionRef.startAfter(Document);
+
+    collectionRef = collectionRef.startAfter(document);
   }
 
   return collectionRef.get();
